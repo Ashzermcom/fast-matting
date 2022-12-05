@@ -1,2 +1,2 @@
 # fast-matting
-The first version
+一个简单的调用TensorRT作为后端推理引擎的demo。其中包括了数据预处理cuda加速，int8量化推理加速。最终预处理加推理耗时仅需9ms！
