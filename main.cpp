@@ -9,6 +9,7 @@
 #include "ilogger.h"
 #include "cuda_tools.h"
 #include "preprocess_kernel.cuh"
+#include "mix_memory.h"
 
 
 struct AffineMatrix {
@@ -85,19 +86,16 @@ void inference() {
 	int input_width = 512;
 	int input_size = input_batch * input_channel * input_height * input_width;
 	// set host and device memory for input tensor
-	float* input_data_host = nullptr;
-	float* input_data_device = nullptr;
-	checkCudaRuntime(cudaMallocHost(&input_data_host, input_size * sizeof(float)));
-	checkCudaRuntime(cudaMalloc(&input_data_device, input_size * sizeof(float)));
+	MixMemory input_data;
+	float* input_data_host = input_data.cpu<float>(input_size);
+	float* input_data_device = input_data.gpu<float>(input_size);
 
 	float mean[] = { 0.485, 0.456, 0.406 };
 	float std[] = { 0.229, 0.224, 0.225 };
 
-	float* affine_matrix_host = nullptr;
-	float* affine_matrix_device = nullptr;
-
-	checkCudaRuntime(cudaMallocHost(&affine_matrix_host, 6 * sizeof(float)));
-	checkCudaRuntime(cudaMalloc(&affine_matrix_device, 6 * sizeof(float)));
+	MixMemory affine_matrix_mix;
+	float* affine_matrix_host = affine_matrix_mix.cpu<float>(6);
+	float* affine_matrix_device = affine_matrix_mix.gpu<float>(6);
 
 	AffineMatrix affine_matrix;
 	CUDAKernel::Norm normalize = CUDAKernel::Norm::mean_std(mean, std, 1/255.0f, CUDAKernel::ChannelType::invert);
@@ -119,10 +117,10 @@ void inference() {
 	int output_height = 512;
 	int output_width = 512;
 	int output_size = output_batch * output_channel * output_height * output_width;
-	float* output_data_host = nullptr;
-	float* output_data_device = nullptr;
-	checkCudaRuntime(cudaMallocHost(&output_data_host, output_size * sizeof(float)));
-	checkCudaRuntime(cudaMalloc(&output_data_device, output_size * sizeof(float)));
+
+	MixMemory output_data;
+	float* output_data_host = output_data.cpu<float>(output_size);
+	float* output_data_device = output_data.gpu<float>(output_size);
 
 	auto input_dims = execution_context->getBindingDimensions(0);
 	input_dims.d[0] = input_batch;
@@ -135,11 +133,6 @@ void inference() {
 	checkCudaRuntime(cudaPeekAtLastError());
 
 	checkCudaRuntime(cudaStreamDestroy(stream));
-	checkCudaRuntime(cudaFreeHost(input_data_host));
-	checkCudaRuntime(cudaFreeHost(output_data_host));
-	checkCudaRuntime(cudaFree(input_data_device));
-	checkCudaRuntime(cudaFree(output_data_device));
-	checkCudaRuntime(cudaFree(affine_matrix_device));
 	checkCudaRuntime(cudaFree(image_device));
 }
 

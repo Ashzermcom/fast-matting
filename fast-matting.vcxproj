@@ -151,12 +151,14 @@
   <ItemGroup>
     <ClInclude Include="cuda_tools.h" />
     <ClInclude Include="ilogger.h" />
+    <ClInclude Include="mix_memory.h" />
     <ClInclude Include="trt_infer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cuda_tools.cpp" />
     <ClCompile Include="ilogger.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mix_memory.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

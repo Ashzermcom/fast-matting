@@ -11,6 +11,22 @@ namespace CUDATools {
         return true;
     }
 
+    bool check_device_id(int device_id) {
+        int device_count = -1;
+        checkCudaRuntime(cudaGetDeviceCount(&device_count));
+        if (device_id < 0 || device_id >= device_count) {
+            printf("Invalid device id: %d, count = %d", device_id, device_count);
+            return false;
+        }
+        return true;
+    }
+
+    int current_device_id() {
+        int device_id = 0;
+        checkCudaRuntime(cudaGetDevice(&device_id));
+        return device_id;
+    }
+
     void device_description(int device_id) {
         int driver_version, runtime_version;
         cudaDeviceProp device_property;
@@ -36,5 +52,14 @@ namespace CUDATools {
         printf("Maximum number of threads per block: %d\n", device_property.maxThreadsPerBlock);
         printf("Max dimension size of a thread grid (x,y,z): (%d, %d, %d)\n", device_property.maxGridSize[0], device_property.maxGridSize[1], device_property.maxGridSize[2]);
         printf("Max dimension size of a thread block (x,y,z): (%d, %d, %d)\n", device_property.maxThreadsDim[0], device_property.maxThreadsDim[1], device_property.maxThreadsDim[2]);
+    }
+
+    AutoDevice::AutoDevice(int device_id) {
+        checkCudaRuntime(cudaGetDevice(&old_));
+        checkCudaRuntime(cudaSetDevice(device_id));
+    }
+
+    AutoDevice::~AutoDevice() {
+        checkCudaRuntime(cudaSetDevice(old_));
     }
 }

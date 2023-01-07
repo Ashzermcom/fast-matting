@@ -29,6 +29,9 @@
     <ClInclude Include="trt_infer.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mix_memory.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ilogger.cpp">
@@ -38,6 +41,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cuda_tools.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mix_memory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
