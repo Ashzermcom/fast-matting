@@ -9,7 +9,7 @@
 #include "ilogger.h"
 #include "cuda_tools.h"
 #include "preprocess_kernel.cuh"
-#include "mix_memory.h"
+#include "trt_tensor.h"
 
 
 struct AffineMatrix {
@@ -86,9 +86,11 @@ void inference() {
 	int input_width = 512;
 	int input_size = input_batch * input_channel * input_height * input_width;
 	// set host and device memory for input tensor
-	MixMemory input_data;
-	float* input_data_host = input_data.cpu<float>(input_size);
-	float* input_data_device = input_data.gpu<float>(input_size);
+	// MixMemory input_data;
+	// float* input_data_host = input_data.cpu<float>(input_size);
+	// float* input_data_device = input_data.gpu<float>(input_size);
+	TRT::Tensor input_data({input_batch, input_channel, input_height, input_width}, TRT::DataType::Float);
+	input_data.set_stream(stream);
 
 	float mean[] = { 0.485, 0.456, 0.406 };
 	float std[] = { 0.229, 0.224, 0.225 };
@@ -110,7 +112,7 @@ void inference() {
 	checkCudaRuntime(cudaMemcpyAsync(image_device, image.data, image_size, cudaMemcpyHostToDevice, stream));
 	checkCudaRuntime(cudaMemcpyAsync(affine_matrix_device, affine_matrix_host, sizeof(affine_matrix.dst2src), cudaMemcpyHostToDevice, stream));
 
-	CUDAKernel::warp_affine_bilinear_and_normalize_plane(image_device, image.cols * 3, image.cols, image.rows, input_data_device, input_width, input_height, affine_matrix_device, 0, normalize, stream);
+	CUDAKernel::warp_affine_bilinear_and_normalize_plane(image_device, image.cols * 3, image.cols, image.rows, input_data.gpu<float>(), input_width, input_height, affine_matrix_device, 0, normalize, stream);
 
 	int output_batch = 1;
 	int output_channel = 1;
@@ -118,17 +120,19 @@ void inference() {
 	int output_width = 512;
 	int output_size = output_batch * output_channel * output_height * output_width;
 
-	MixMemory output_data;
-	float* output_data_host = output_data.cpu<float>(output_size);
-	float* output_data_device = output_data.gpu<float>(output_size);
+	//MixMemory output_data;
+	//float* output_data_host = output_data.cpu<float>(output_size);
+	//float* output_data_device = output_data.gpu<float>(output_size);
+	TRT::Tensor output_data({output_batch,output_channel,output_height,output_width}, TRT::DataType::Float);
+	output_data.set_stream(stream);
 
 	auto input_dims = execution_context->getBindingDimensions(0);
 	input_dims.d[0] = input_batch;
 	execution_context->setBindingDimensions(0, input_dims);
-	float* bindings[] = { input_data_device, output_data_device };
+	float* bindings[] = { input_data.gpu<float>(), output_data.gpu<float>() };
 	bool success = execution_context->enqueueV2((void**)bindings, stream, nullptr);
 	cv::Mat output_result(output_height, output_width, CV_32F);
-	checkCudaRuntime(cudaMemcpyAsync(output_result.data, output_data_device, output_size * sizeof(float), cudaMemcpyDeviceToHost, stream));
+	// checkCudaRuntime(cudaMemcpyAsync(output_result.data, output_data_device, output_size * sizeof(float), cudaMemcpyDeviceToHost, stream));
 	checkCudaRuntime(cudaStreamSynchronize(stream));
 	checkCudaRuntime(cudaPeekAtLastError());
 
