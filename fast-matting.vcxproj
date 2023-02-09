@@ -151,7 +151,10 @@
   <ItemGroup>
     <ClInclude Include="cuda_tools.h" />
     <ClInclude Include="ilogger.h" />
+    <ClInclude Include="infer_controller.h" />
+    <ClInclude Include="matting_model.h" />
     <ClInclude Include="mix_memory.h" />
+    <ClInclude Include="monopoly_allocator.h" />
     <ClInclude Include="trt_infer.h" />
     <ClInclude Include="trt_tensor.h" />
   </ItemGroup>
@@ -159,7 +162,9 @@
     <ClCompile Include="cuda_tools.cpp" />
     <ClCompile Include="ilogger.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="matting_model.cpp" />
     <ClCompile Include="mix_memory.cpp" />
+    <ClCompile Include="trt_infer.cpp" />
     <ClCompile Include="trt_tensor.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
