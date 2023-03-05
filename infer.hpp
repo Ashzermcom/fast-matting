@@ -97,7 +97,7 @@ public:
 
     virtual bool has_dynamic_dim() = 0;
     virtual void print() = 0;
-}
+};
 
 }
 
