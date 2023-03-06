@@ -50,6 +50,47 @@ public:
             worker_.reset();
         }
     }
+
+    virtual std::shared_future<_Result> commit(const _Input& input) {
+        Item item;
+        item.input = input;
+        item.prom.reset(new std::promise<_Result>());
+        {
+            std::unique_lock<std::mutex> _lock_(queue_lock_);
+            input_queue_.push(item);
+        }
+        cond_.notify_one();
+        return item.prom->get_future();
+    }
+
+    virtual std::vector<std::shared_future<_Result>> commits(const std::vector<_Input>& inputs) {
+        std::vector<std::shared_future<_Result>>& output;
+        {
+            std::unique_lock<std::mutex> _lock_(queue_lock_);
+            for (int i=0; i<inputs.size(); ++i) {
+                Item item;
+                item.input = inputs[i];
+                item.prom.reset(new std::promise<_Result>());
+                output.emplace_back(item.prom->get_future());
+                input_queue_.push(item);
+            }
+        }
+        cond_.notify_one();
+        return output;
+    }
+
+    template <typename _LoadMethod>
+    bool start(const _LoadMethod& loadMethod, int max_items_processed = 1, void* stream = nullptr) {
+        stop();
+        this->stream_ = stream;
+        this->max_items_processed_ = max_items_processed;
+        std::promise<bool> status;
+        worker_ = std::make_shared<std::thread>(&Instance::worker<_LoadMethod>, this, std::ref(loadMethod), std::ref(status));
+        return status.get_future.get();
+    }
+
+private:
+
 };
 
 }
