@@ -90,9 +90,53 @@ public:
     }
 
 private:
+    template <typename _LoadMethod>
+    void worker(const _LoadMethod& loadMethod, std::promise<bool>& status) {
+        std::shared_ptr<_Model> model = loadMethod();
+        if (model == nullptr) {
+            status.set_value(false);
+            return;
+        }
 
+        run_ = true;
+        status.set_value(true);
+        std::vector<Item> fetch_items;
+        std::vector<_Input> inputs;
+        while (get_items_and_wait(fetch_items, max_items_processed_))
+        {
+            inputs.resize(fetch_items.size());
+            std::transform(fetch_items.begin(), fetch_items.end(), inputs.begin(), [](Item& item) { return item.input; });
+            auto ret = model->forwards(inputs, stream_);
+            for (int i=0; i < (int)fetch_items.size(); ++i) {
+                if (i < (int)ret.size()) {
+                    fetch_items[i].prom->set_value(ret[i]);
+                } else {
+                    fetch_items[i].prom->set_value(_Result());
+                }
+            }
+            inputs.clear();
+            fetch_items.clear();
+        }
+        model.reset();
+        run_ = false;
+    }
+
+    virtual bool get_items_and_wait(std::vector<Item>& fetch_items, int max_size) {
+        std::unique_lock<std::mutex> l(queue_lock_);
+        cond_.wait(l, [&]() { return !run_ || !input_queue_.empty(); });
+        if (!run_) {
+            return false;
+        }
+        fetch_items.clear();
+        for (int i=0; i < max_size && !input_queue_.empty(); ++i) {
+            fetch_items.emplace_back(std::move(input_queue_.front()));
+            input_queue_.pop();
+        }
+        return true;
+    }
+    
 };
 
-}
+};
 
 #endif  // __CPM_HPP__
