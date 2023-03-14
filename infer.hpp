@@ -1,4 +1,4 @@
-#ifdef __INFER_HPP__
+#ifndef __INFER_HPP__
 #define __INFER_HPP__
 
 #include <memory>
